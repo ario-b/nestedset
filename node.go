@@ -2,7 +2,6 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-
 package nestedset
 
 // NodeInterface is the interface implemented by types that can be used by nodes in nested set
@@ -15,20 +14,20 @@ type NodeInterface interface {
 	Left() int64  // Returns left of node
 	Right() int64 // Returns right of node
 
-	SetId(int64)      // Sets node id
+	SetId(int64)    // Sets node id
 	SetName(string) // Sets node name
-	SetLevel(int64)   // Sets node level
-	SetLeft(int64)    // Sets node left
-	SetRight(int64)   // Sets node right
+	SetLevel(int64) // Sets node level
+	SetLeft(int64)  // Sets node left
+	SetRight(int64) // Sets node right
 }
 
 // Node represents generic node type with NodeInterface implementation
 type Node struct {
-	NodeId    int64    `json:"id"`
-	NodeName  string   `json:"node_name"`
-	NodeLevel int64    `json:"level"`
-	NodeLeft  int64    `json:"left"`
-	NodeRight int64    `json:"right"`
+	NodeId    int64  `json:"id"`
+	NodeName  string `json:"node_name"`
+	NodeLevel int64  `json:"level"`
+	NodeLeft  int64  `json:"left"`
+	NodeRight int64  `json:"right"`
 }
 
 // NewNode returns a new Node instance

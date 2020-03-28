@@ -2,7 +2,6 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-
 /*
 Package nestedset provides types and functions for manage nested sets.
 
@@ -105,6 +104,22 @@ type NestedSet struct {
 	rootNode NodeInterface
 	maxId    int64
 	mutex    sync.Mutex
+}
+
+// NewNestedSetWithNodes creates and returns a new instance of NestedSet with nodes.
+func NewNestedSetWithNodes(rootNode NodeInterface, nodes []NodeInterface) *NestedSet {
+	s := NestedSet{
+		nodes:    make([]NodeInterface, 0),
+		rootNode: rootNode,
+	}
+
+	s.nodes = append(s.nodes, s.rootNode)
+
+	for _, node := range nodes {
+		s.nodes = append(s.nodes, node)
+	}
+
+	return &s
 }
 
 // NewNestedSet creates and returns a new instance of NestedSet with root node.
