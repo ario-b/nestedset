@@ -144,3 +144,43 @@ func printBranch(branch []NodeInterface) {
 		fmt.Printf("%s lvl:%d, left:%d, right:%d\n", n.Name(), n.Level(), n.Left(), n.Right())
 	}
 }
+
+func TestNewNestedSetWithNodes(t *testing.T) {
+
+	rootNode := createNodeSample(0, 0, 5)
+	node1 := createNodeSample(1, 1, 4)
+	node2 := createNodeSample(2, 2, 3)
+
+	nodes := make([]NodeInterface, 0)
+	nodes = append(nodes, node1, node2)
+
+	ns := NewNestedSetWithNodes(rootNode, nodes)
+
+	node3 := NewNode()
+	node4 := NewNode()
+	ns.Add(node3, nil)
+	ns.Add(node4, node3)
+
+	branch := ns.Branch(nil)
+
+	resultNodes := make([]NodeInterface, 0)
+	for _, n := range branch {
+		resultNodes = append(resultNodes, n)
+	}
+
+	checkNode(t, resultNodes[0], 0, 0, 9)
+	checkNode(t, resultNodes[1], 1, 1, 4)
+	checkNode(t, resultNodes[2], 2, 2, 3)
+	checkNode(t, resultNodes[3], 1, 5, 8)
+	checkNode(t, resultNodes[4], 2, 6, 7)
+
+}
+
+func createNodeSample(level, lft, rgt int64) *Node {
+	node := NewNode()
+	node.SetLeft(lft)
+	node.SetRight(rgt)
+	node.SetLevel(level)
+
+	return node
+}
