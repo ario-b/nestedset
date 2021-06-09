@@ -291,6 +291,84 @@ func (s *NestedSet) Move(node, parent NodeInterface) error {
 	return nil
 }
 
+// Shift shift node poisition within same level
+func (s *NestedSet) Shift(node, shiftedNode NodeInterface) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	left := node.Left()
+	right := node.Right()
+	level := node.Level()
+
+	shiftedLeft := shiftedNode.Left()
+	shiftedRight := shiftedNode.Right()
+
+	if level == 0 {
+		return errors.New("Can't shift root node")
+	}
+
+	if node.Level() != shiftedNode.Level() {
+		return errors.New("Can't shift node to different level")
+	}
+
+	if shiftedLeft >= left && shiftedRight <= right {
+		return errors.New("Can't shift node to current or inside the node itself")
+	}
+
+	parent := s.parent(node)
+
+	if shiftedLeft <= parent.Left() || shiftedLeft >= parent.Right() {
+		return errors.New("Can't shift position outside or equal to parent tree")
+	}
+
+	skewLeft := shiftedLeft - left
+	skewRight := shiftedRight - right
+
+	shiftUp := skewLeft < 0
+
+	skewFactor := skewLeft
+	if !shiftUp {
+		skewFactor = skewRight
+	}
+
+	toUpdate := s.branch(node)
+
+	skewShift := right - left + 1
+
+	for _, n := range s.nodes {
+		if n.Left() <= parent.Left() && n.Right() >= parent.Right() {
+			continue
+		}
+
+		if n.Left() >= left && n.Right() <= right {
+			continue
+		}
+
+		if shiftUp {
+
+			if n.Left() >= shiftedLeft && n.Left() < left {
+				n.SetLeft(n.Left() + int64(skewShift))
+				n.SetRight(n.Right() + int64(skewShift))
+			}
+
+		} else {
+
+			if n.Right() <= shiftedRight && n.Right() > right {
+				n.SetRight(n.Right() - int64(skewShift))
+				n.SetLeft(n.Left() - int64(skewShift))
+			}
+
+		}
+	}
+
+	for _, n := range toUpdate {
+		n.SetLeft(n.Left() + skewFactor)
+		n.SetRight(n.Right() + skewFactor)
+	}
+
+	return nil
+}
+
 // Returns parent for node.
 func (s *NestedSet) Parent(node NodeInterface) NodeInterface {
 

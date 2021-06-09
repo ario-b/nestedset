@@ -57,7 +57,7 @@ func createTestNestedSet(t *testing.T) {
 
 func checkNode(t *testing.T, node NodeInterface, level, left, right int64) {
 	if node.Level() != level {
-		t.Errorf("Invalid level for node '%s', expected %d, get %d", node.Name(), right, node.Level())
+		t.Errorf("Invalid level for node '%s', expected %d, get %d", node.Name(), level, node.Level())
 	}
 	if node.Left() != left {
 		t.Errorf("Invalid left for node '%s', expected %d, get %d", node.Name(), left, node.Left())
@@ -147,9 +147,9 @@ func printBranch(branch []NodeInterface) {
 
 func TestNewNestedSetWithNodes(t *testing.T) {
 
-	rootNode := createNodeSample(0, 0, 5)
-	node1 := createNodeSample(1, 1, 4)
-	node2 := createNodeSample(2, 2, 3)
+	rootNode := createNodeSample(0, 0, 5, "")
+	node1 := createNodeSample(1, 1, 4, "")
+	node2 := createNodeSample(2, 2, 3, "")
 
 	nodes := make([]NodeInterface, 0)
 	nodes = append(nodes, node1, node2)
@@ -176,11 +176,193 @@ func TestNewNestedSetWithNodes(t *testing.T) {
 
 }
 
-func createNodeSample(level, lft, rgt int64) *Node {
+func createNodeSample(level, lft, rgt int64, name string) *Node {
 	node := NewNode()
 	node.SetLeft(lft)
 	node.SetRight(rgt)
 	node.SetLevel(level)
+	node.SetName(name)
 
 	return node
+}
+
+func TestNestedSet_Shift(t *testing.T) {
+	// standardTree := []tree{
+	// 	{0, 0, 21},
+	// 	{1, 1, 2},
+	// 	{1, 3, 8},
+	// 	{2, 4, 5},
+	// 	{2, 6, 7},
+	// 	{1, 9, 14},
+	// 	{2, 10, 13},
+	// 	{3, 11, 12},
+	// 	{1, 15, 16},
+	// 	{1, 17, 20},
+	// 	{2, 18, 19},
+	// }
+
+	type tree struct{ level, left, right int64 }
+
+	tests := []struct {
+		name              string
+		node, shiftedNode int64
+		expectedTrees     []tree
+		isError           bool
+	}{
+		{
+			"Shift to different level",
+			1,
+			3,
+			nil,
+			true,
+		},
+		{
+			"Shift to outside parent",
+			3,
+			1,
+			nil,
+			true,
+		},
+		{
+			"Shift up without Branch",
+			8,
+			1,
+			[]tree{
+				{0, 0, 21},
+				{1, 1, 2},
+				{1, 3, 4},
+				{1, 5, 10},
+				{2, 6, 7},
+				{2, 8, 9},
+				{1, 11, 16},
+				{2, 12, 15},
+				{3, 13, 14},
+				{1, 17, 20},
+				{2, 18, 19},
+			},
+			false,
+		},
+		{
+			"Shift down without Branch",
+			1,
+			8,
+			[]tree{
+				{0, 0, 21},
+				{1, 1, 6},
+				{2, 2, 3},
+				{2, 4, 5},
+				{1, 7, 12},
+				{2, 8, 11},
+				{3, 9, 10},
+				{1, 13, 14},
+				{1, 15, 16},
+				{1, 17, 20},
+				{2, 18, 19},
+			},
+			false,
+		},
+		{
+			"Shift up with Branch",
+			9,
+			1,
+			[]tree{
+				{0, 0, 21},
+				{1, 1, 4},
+				{2, 2, 3},
+				{1, 5, 6},
+				{1, 7, 12},
+				{2, 8, 9},
+				{2, 10, 11},
+				{1, 13, 18},
+				{2, 14, 17},
+				{3, 15, 16},
+				{1, 19, 20},
+			},
+			false,
+		},
+		{
+			"Shift down with Branch",
+			5,
+			9,
+			[]tree{
+				{0, 0, 21},
+				{1, 1, 2},
+				{1, 3, 8},
+				{2, 4, 5},
+				{2, 6, 7},
+				{1, 9, 10},
+				{1, 11, 14},
+				{2, 12, 13},
+				{1, 15, 20},
+				{2, 16, 19},
+				{3, 17, 18},
+			},
+			false,
+		},
+		{
+			"Shift within branch",
+			4,
+			3,
+			[]tree{
+				{0, 0, 21},
+				{1, 1, 2},
+				{1, 3, 8},
+				{2, 4, 5},
+				{2, 6, 7},
+				{1, 9, 14},
+				{2, 10, 13},
+				{3, 11, 12},
+				{1, 15, 16},
+				{1, 17, 20},
+				{2, 18, 19},
+			},
+			false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rootNode := createNodeSample(0, 0, 21, "root")
+			nodes := []NodeInterface{
+				createNodeSample(1, 1, 2, "node 1"),
+				createNodeSample(1, 3, 8, "node 2"),
+				createNodeSample(2, 4, 5, "node 3"),
+				createNodeSample(2, 6, 7, "node 4"),
+				createNodeSample(1, 9, 14, "node 5"),
+				createNodeSample(2, 10, 13, "node 6"),
+				createNodeSample(3, 11, 12, "node 7"),
+				createNodeSample(1, 15, 16, "node 8"),
+				createNodeSample(1, 17, 20, "node 9"),
+				createNodeSample(2, 18, 19, "node 10"),
+			}
+
+			ns := NewNestedSetWithNodes(rootNode, nodes)
+			err := ns.Shift(nodes[tc.node-1], nodes[tc.shiftedNode-1])
+			if err == nil && tc.isError {
+				t.Fatal("suppose to be error")
+			}
+
+			if err != nil && !tc.isError {
+				t.Fatal(err)
+			}
+
+			if tc.isError {
+				fmt.Println(err)
+				return
+			}
+
+			branch := ns.Branch(nil)
+
+			resultNodes := make([]NodeInterface, 0)
+			for _, n := range branch {
+				resultNodes = append(resultNodes, n)
+			}
+			// printBranch(resultNodes)
+
+			for i, e := range tc.expectedTrees {
+				checkNode(t, resultNodes[i], e.level, e.left, e.right)
+			}
+
+		})
+	}
 }
